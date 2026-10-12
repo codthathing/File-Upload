@@ -1,162 +1,252 @@
-# 📂 File Upload API (C Language)
+# 📂 File Upload API (C# + ASP.NET Core)
 
 ## Overview
-A simple HTTP-like server written in C that allows clients to upload files using sockets.
+
+A file upload API built with C# and ASP.NET Core that allows clients to upload files over HTTP, stores uploaded files, and returns upload status. The project begins with C# fundamentals and gradually introduces networking, file handling, authentication, databases, and cloud storage.
+
+The final goal is to build the file-upload service for **SOARS**, a personal library for saving, organizing, archiving, and sharing links, files, and notes in one clean, searchable workspace.
 
 ## Tech Stack
-- C (GCC)
-- POSIX sockets
-- Basic file I/O
+
+- C# and .NET SDK
+- ASP.NET Core Minimal APIs
+- `System.IO` for file operations
+- PostgreSQL with Npgsql
+- AWS S3 for object storage (later stage)
 
 ## Features
-- Accept client connections
-- Receive file metadata and content
-- Store files in a local `uploads/` folder
-- Return upload status
 
-## Basic Flow
-1. Server listens on a port.
-2. Client connects and sends file with headers.
-3. Server reads bytes and writes to disk.
-4. Response is sent confirming upload success.
+- Accept file upload requests over HTTP.
+- Receive file metadata and content.
+- Store uploaded files in a local `uploads/` directory.
+- Validate file names, file sizes, and file types.
+- Return appropriate HTTP status codes.
+- Track uploaded files and their metadata in PostgreSQL.
+- Authenticate users using Supabase Auth.
+- Enforce file ownership and storage quotas.
+- Support cloud storage with AWS S3.
 
-## Example Client Request (pseudo)
-- POST /upload HTTP/1.1
-- Filename: test.txt
-- Content-Length: 512
-
-- <file bytes> ```
+---
 
 ## 🛠️ Suggested Learning Path
-- Brush up on C fundamentals (if needed)
-- Master file I/O: reading/writing files, handling errors
-- Learn POSIX sockets: start with TCP client-server examples
-- Get comfortable with GCC and Makefiles
-- Practice debugging with gdb
 
+### Stage 1: C# File Writer Utility
 
-
-
-
-
-# 🛠️ What You Can Build NOW (C Fundamentals Only)
-
-## 1. File Writer Utility
-
-**What it is:** A small C program that opens a file, writes bytes to it, and closes it cleanly.
+**What it is:** A small console application that creates a file and writes text or binary data to disk.
 
 **What it teaches you:**
-- `fopen()`, `fwrite()`, `fclose()` — the core of any upload server
-- Error handling with `perror()` and `errno`
-- Working with binary vs text mode (`"wb"` vs `"w"`)
-- Creating directories with `mkdir()`
+- `File`, `FileStream`, and the `System.IO` namespace.
+- Creating, reading, writing, and deleting files.
+- Handling exceptions with `try`, `catch`, and `finally`.
+- Understanding paths, directories, and file permissions.
+- Using asynchronous file operations.
 
-**Why it matters:** Your server's entire job is writing uploaded bytes to disk. If you can't do this reliably, nothing else matters. Master this first.
+**Why it matters:** File uploads ultimately require reliable storage of incoming file contents.
 
-**Connects to the final project:** The `uploads/` folder storage step is 100% this skill.
+**Connects to the final project:** This becomes the local file-storage component of the upload API.
+
+### Stage 2: Struct-Based Metadata Model
+
+**What it is:** Create a C# class or record representing an uploaded file.
+
+**What it teaches you:**
+- Classes, records, properties, and constructors.
+- Strings, numeric types, and `DateTimeOffset`.
+- Object initialization and validation.
+- Separating data models from application logic.
+
+**Example model:**
+
+```csharp
+public class UploadMetadata
+{
+    public string FileName { get; set; } = "";
+    public long SizeBytes { get; set; }
+    public string ContentType { get; set; } = "";
+    public DateTimeOffset UploadedAt { get; set; }
+}
+```
+
+**Why it matters:** Every upload needs metadata to identify and organize the stored file.
+
+**Connects to the final project:** This model will eventually represent file metadata stored in PostgreSQL.
+
+### Stage 3: Metadata and Request Validation
+
+**What it is:** Build a program that receives file metadata and validates it before accepting an upload.
+
+**What it teaches you:**
+- String manipulation and parsing.
+- Conditional statements and validation methods.
+- Exception handling.
+- Safe filename generation.
+- Validating file sizes and allowed extensions.
+
+**Why it matters:** Client-supplied filenames, sizes, and content types cannot be trusted.
+
+**Connects to the final project:** This becomes the validation layer for incoming upload requests.
+
+### Stage 4: File Copier and Stream Processing
+
+**What it is:** Build a command-line utility that copies a file from one location to another using streams.
+
+**What it teaches you:**
+- `FileStream`, `Stream`, and `CopyToAsync()`.
+- Reading and writing data in chunks.
+- Asynchronous programming with `async` and `await`.
+- Handling I/O errors and incomplete operations.
+- Managing streams and disposing of resources.
+
+**Why it matters:** Large files should be processed without loading their entire contents into memory.
+
+**Connects to the final project:** The same stream-processing concepts are used when receiving uploaded file contents and writing them to storage.
+
+### Stage 5: In-Memory Upload Registry
+
+**What it is:** Create a console application that tracks uploaded files using a `List<UploadMetadata>`.
+
+**What it teaches you:**
+- Collections and generic lists.
+- Searching, adding, updating, and removing records.
+- LINQ for filtering and sorting.
+- Generating unique file identifiers.
+- Separating business logic into reusable classes.
+
+**Why it matters:** The server needs to keep track of files and their metadata.
+
+**Connects to the final project:** This registry will later be replaced by PostgreSQL so metadata persists after the application restarts.
+
+### Stage 6: HTTP Response Builder and Minimal API
+
+**What it is:** Create an ASP.NET Core Minimal API with endpoints that return appropriate HTTP responses.
+
+**What it teaches you:**
+- The .NET SDK and project structure.
+- HTTP methods, routes, headers, and status codes.
+- JSON serialization.
+- Request validation and error responses.
+- Testing endpoints with an API client.
+
+**Example endpoints:**
+
+- `GET /` — Check server status.
+- `POST /upload` — Upload a file.
+- `GET /files` — List uploaded files.
+- `GET /files/{id}` — Retrieve file metadata.
+
+**Why it matters:** ASP.NET Core handles HTTP networking and request parsing, so you do not need to implement HTTP manually using raw TCP sockets.
+
+**Connects to the final project:** This becomes the foundation of the upload server.
 
 ---
 
-## 2. Struct-Based Message/Metadata Model
+## 🚀 Advanced Stages: Turning It Into a Real API
 
-**What it is:** A `struct` that represents a file upload request — filename, file size, content type.
+### Stage 7: File Upload Endpoint
+
+**What it is:** Implement `POST /upload` using ASP.NET Core and `IFormFile`.
 
 **What it teaches you:**
-- Defining and using `struct` types
-- Working with fixed-size char arrays (`char filename[256]`)
-- Passing structs to functions by pointer
-- Printing structured data with `printf`
+- Receiving multipart/form-data requests.
+- Handling uploaded files using `IFormFile`.
+- Streaming files to disk.
+- Setting maximum request and file sizes.
+- Returning HTTP success and error responses.
+- Testing uploads with Postman or another API client.
 
-**Why it matters:** Before you can parse HTTP-like headers from a client, you need a clean data model to store what you parsed. This struct becomes the backbone of your server's request handling.
+**Connects to SOARS:** Users can upload files through the frontend.
 
-**Connects to the final project:** The `Filename` and `Content-Length` headers map directly to fields in this struct.
+### Stage 8: PostgreSQL and Npgsql
+
+**What it is:** Replace the in-memory registry with a PostgreSQL database.
+
+**What it teaches you:**
+- Relational database design.
+- Tables, primary keys, foreign keys, and indexes.
+- SQL queries and parameterized commands.
+- Connecting C# to PostgreSQL using Npgsql.
+- Persisting file metadata and tracking storage usage.
+
+**Connects to SOARS:** The database stores file metadata, ownership, notes, links, tags, and other searchable information.
+
+### Stage 9: Authentication and Authorization
+
+**What it is:** Integrate Supabase Auth with the C# API.
+
+**What it teaches you:**
+- Authentication versus authorization.
+- Access tokens and JWT validation.
+- Protecting API endpoints.
+- Associating uploaded files with authenticated users.
+- Enforcing ownership and sharing permissions.
+- Validating access before allowing downloads or deletions.
+
+**Connects to SOARS:** Each user gets a private library with controlled sharing.
+
+### Stage 10: Storage Quotas and File Management
+
+**What it is:** Add per-user storage limits and file-management operations.
+
+**What it teaches you:**
+- Calculating total storage usage.
+- Enforcing upload limits.
+- Updating and deleting file metadata safely.
+- Handling partial failures between disk storage and database operations.
+- Preventing unauthorized access to other users' files.
+
+**Connects to SOARS:** Users can manage their libraries without exceeding their storage allowances.
+
+### Stage 11: AWS S3 Object Storage
+
+**What it is:** Replace or supplement local file storage with Amazon S3.
+
+**What it teaches you:**
+- S3 buckets and objects.
+- AWS SDK for .NET.
+- Uploading, downloading, and deleting objects.
+- Configuring credentials securely.
+- Presigned URLs and private file access.
+- Understanding multipart uploads for large files.
+
+**Connects to SOARS:** Files can be stored in cloud object storage instead of relying on a server's local disk.
 
 ---
 
-## 3. Buffer & String Parser
+## 📁 Suggested Project Structure
 
-**What it is:** A program that reads a raw string like `"Filename: test.txt\nContent-Length: 512"` and extracts the values from it.
+```text
+Soars.UploadApi/
+├── Program.cs
+├── Models/
+│   └── UploadMetadata.cs
+├── Services/
+│   ├── FileStorageService.cs
+│   └── UploadService.cs
+├── Data/
+│   └── DatabaseService.cs
+├── Endpoints/
+│   └── UploadEndpoints.cs
+├── uploads/
+├── appsettings.json
+├── .gitignore
+└── Soars.UploadApi.csproj
+```
 
-**What it teaches you:**
-- `sscanf()`, `strstr()`, `strtok()`, `strcpy()`
-- Pointer arithmetic on strings
-- Safe string handling (avoiding buffer overflows)
-- Writing your own mini-parser
+Keep credentials and secrets out of source control. The `uploads/` directory should be ignored by Git.
 
-**Why it matters:** When a client sends headers to your server, they arrive as raw text. You need to pull out the filename and size before you can do anything else. This is exactly that logic.
+## 🚀 Final Project Flow
 
-**Connects to the final project:** This becomes your HTTP-like header parser in the server.
+1. The server starts and exposes HTTP endpoints.
+2. A user authenticates through Supabase Auth.
+3. The client sends a file and its metadata to the upload endpoint.
+4. The API validates the user's access and the upload constraints.
+5. The file is stored on disk or in AWS S3.
+6. Its metadata and ownership are saved in PostgreSQL.
+7. The API returns the upload status and file identifier.
+8. Subsequent requests verify authorization before accessing the file.
 
----
+## 🎯 Learning Strategy
 
-## 4. Simple CLI File Copier
+Build and test each stage independently before moving to the next. Start with local file storage and an unauthenticated development API. Add PostgreSQL, authentication, quotas, and cloud storage only after the basic upload flow works.
 
-**What it is:** A command-line tool that reads a file from one path and writes it to another — like a manual `cp` command.
-
-**What it teaches you:**
-- Reading files in chunks with a buffer (`char buf[4096]`)
-- Looping with `fread()` / `fwrite()` until EOF
-- Handling partial reads and writes correctly
-- Command-line arguments with `argc` / `argv`
-
-**Why it matters:** Your upload server receives file bytes over a socket in chunks — not all at once. This teaches you the exact read-loop pattern you'll reuse for receiving file data from clients.
-
-**Connects to the final project:** The "receive bytes → write to disk" loop in your server is this, just with a socket instead of a file as the source.
-
----
-
-## 5. In-Memory Upload Log
-
-**What it is:** A program that tracks uploaded files using an array of structs — storing filename, size, and a timestamp string for each upload.
-
-**What it teaches you:**
-- Arrays of structs
-- Simple CRUD logic in C (add, list, search by name)
-- Formatting output with `printf` and `sprintf`
-- Understanding state management before introducing sockets
-
-**Why it matters:** Before your server handles multiple connections, you need to think about how it tracks what's been uploaded. This is that logic in isolation — without network complexity getting in the way.
-
-**Connects to the final project:** This becomes your server's upload registry, later extended with thread safety when you learn concurrency.
-
----
-
-## 6. Response Builder
-
-**What it is:** A function that constructs a HTTP-like response string — status line, headers, and body — into a char buffer.
-
-**What it teaches you:**
-- `snprintf()` for safe string building
-- Designing reusable functions with clear inputs/outputs
-- Understanding what an HTTP response actually looks like as raw text
-- Separating concerns (building a response vs sending it)
-
-**Why it matters:** Your server needs to send back a "200 OK — upload successful" (or an error) to every client. Writing the response builder now means when you learn sockets, you only need to add one line: `send(socket, response, len, 0)`.
-
-**Connects to the final project:** This is the last step in your server's flow — the response that confirms upload success.
-
----
-
-## 🚀 Why This Approach Works
-
-### Immediate Progress
-You can start coding today. No sockets, no Makefiles, no GDB needed yet — just GCC and a terminal.
-
-### Solid Foundation
-Each piece you build now maps 1:1 to a component in your final server. You're not doing busywork — you're pre-building the server in safe, isolated chunks.
-
-### Understanding Before Complexity
-You'll understand *what* your server does at every step before the complexity of POSIX sockets makes it hard to see the logic underneath.
-
-### Easy Transition
-| What you build now | What it becomes later |
-|---|---|
-| File Writer Utility | `uploads/` folder handler in your server |
-| Metadata Struct | Your request parser's data model |
-| String Parser | HTTP-like header parser |
-| File Copier (chunk loop) | Socket receive → disk write loop |
-| Upload Log | Server's in-memory file registry |
-| Response Builder | `send()` payload constructor |
-
-### Testable Without a Network
-Every program here runs standalone. You can test, break, and fix things without spinning up a server or a client.
+The objective is to understand how the components work together, rather than simply assembling a collection of libraries.
